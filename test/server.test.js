@@ -57,6 +57,25 @@ test('document access is private until shared, and viewer edits are denied', asy
   const viewerEdit = await fetch(`${origin}/api/documents/${document.id}`, { method: 'PUT', headers: { cookie: jamie, 'content-type': 'application/json' }, body: JSON.stringify({ content: '<p>Not allowed</p>' }) });
   assert.equal(viewerEdit.status, 403);
 
+  const comment = await fetch(`${origin}/api/documents/${document.id}/comments`, { method: 'POST', headers: { cookie: jamie, 'content-type': 'application/json' }, body: JSON.stringify({ text: 'Consider this paragraph.', anchor: 'Saved across a restart.' }) });
+  assert.equal(comment.status, 201);
+  const suggestion = await fetch(`${origin}/api/documents/${document.id}/suggestions`, { method: 'POST', headers: { cookie: jamie, 'content-type': 'application/json' }, body: JSON.stringify({ originalText: 'Saved across a restart.', proposedText: 'Saved in the document store.' }) });
+  assert.equal(suggestion.status, 201);
+  const suggestionId = (await suggestion.json()).suggestion.id;
+  assert.equal((await fetch(`${origin}/api/documents/${document.id}/suggestions/${suggestionId}`, { method: 'PUT', headers: { cookie: jamie, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'reject' }) })).status, 403);
+  assert.equal((await fetch(`${origin}/api/documents/${document.id}/versions`, { method: 'POST', headers: { cookie: jamie, 'content-type': 'application/json' }, body: JSON.stringify({ label: 'No access' }) })).status, 403);
+
+  const checkpoint = await fetch(`${origin}/api/documents/${document.id}/versions`, { method: 'POST', headers: { cookie: alex, 'content-type': 'application/json' }, body: JSON.stringify({ label: 'First draft' }) });
+  assert.equal(checkpoint.status, 201);
+  const versionId = (await checkpoint.json()).version.id;
+  await fetch(`${origin}/api/documents/${document.id}`, { method: 'PUT', headers: { cookie: alex, 'content-type': 'application/json' }, body: JSON.stringify({ content: '<p>Changed draft.</p>' }) });
+  const restored = await fetch(`${origin}/api/documents/${document.id}/versions/${versionId}`, { method: 'POST', headers: { cookie: alex, 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(restored.status, 200);
+  assert.equal((await restored.json()).document.content, '<p>Saved across a restart.</p>');
+  const accepted = await fetch(`${origin}/api/documents/${document.id}/suggestions/${suggestionId}`, { method: 'PUT', headers: { cookie: alex, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'accept', content: '<p>Saved in the document store.</p>' }) });
+  assert.equal(accepted.status, 200);
+  assert.equal((await accepted.json()).document.content, '<p>Saved in the document store.</p>');
+
   const unauthorizedShare = await fetch(`${origin}/api/documents/${document.id}/share`, { method: 'POST', headers: { cookie: jamie, 'content-type': 'application/json' }, body: JSON.stringify({ email: 'taylor@ajaia.demo', role: 'editor' }) });
   assert.equal(unauthorizedShare.status, 403);
   const unauthorizedBatch = await fetch(`${origin}/api/documents/${document.id}/share`, { method: 'PUT', headers: { cookie: jamie, 'content-type': 'application/json' }, body: JSON.stringify({ changes: [], removeUserIds: ['user_jamie'] }) });
@@ -91,7 +110,7 @@ test('document access is private until shared, and viewer edits are denied', asy
   const alexAfterRestart = await login('alex@ajaia.demo');
   const persisted = await fetch(`${origin}/api/documents/${document.id}`, { headers: { cookie: alexAfterRestart } });
   assert.equal(persisted.status, 200);
-  assert.equal((await persisted.json()).document.content, '<p>Saved across a restart.</p>');
+  assert.equal((await persisted.json()).document.content, '<p>Saved in the document store.</p>');
   const reshare = await fetch(`${origin}/api/documents/${document.id}/share`, { method: 'PUT', headers: { cookie: alexAfterRestart, 'content-type': 'application/json' }, body: JSON.stringify({ changes: [{ userId: 'user_jamie', role: 'editor' }], removeUserIds: [] }) });
   assert.equal(reshare.status, 200);
   const jamieAfterRestart = await login('jamie@ajaia.demo');

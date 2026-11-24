@@ -158,6 +158,9 @@ function renderWorkspace() {
   root.querySelector('#delete-document')?.addEventListener('click', deleteActiveDocument);
   root.querySelector('#export-markdown')?.addEventListener('click', exportMarkdown);
   root.querySelector('#export-pdf')?.addEventListener('click', () => window.print());
+  root.querySelector('#review-document')?.addEventListener('click', openReview);
+  root.querySelector('#save-version')?.addEventListener('click', saveVersion);
+  root.querySelector('#version-history')?.addEventListener('click', openVersionHistory);
   if (state.active) attachEditor();
   startAccessWatch();
 }
@@ -224,6 +227,8 @@ function editorMarkup() {
       <button class="tool-btn page-break-tool" id="insert-page-break" title="Insert page break" aria-label="Insert page break" ${disabled}>↵ Page break</button>
       <button class="tool-btn export-tool" id="export-markdown" title="Download as Markdown" aria-label="Download as Markdown">↓ Markdown</button>
       <button class="tool-btn export-tool" id="export-pdf" title="Print or save as PDF" aria-label="Print or save as PDF">↓ PDF</button>
+      <button class="tool-btn export-tool" id="review-document" title="Comments and suggestions">Comments</button>
+      ${editable ? '<button class="tool-btn export-tool" id="save-version" title="Save a named version">Save version</button><button class="tool-btn export-tool" id="version-history" title="View and restore earlier versions">History</button>' : ''}
       <label class="tool-btn import-tool" for="import-file" title="Import a .txt or .md file" aria-label="Import .txt or .md" ${editable ? '' : 'aria-disabled="true"'}><span aria-hidden="true">↑</span><span>Import .txt / .md</span></label><input id="import-file" type="file" accept=".txt,.md,text/plain,text/markdown" ${disabled} hidden>
       <span class="page-count" aria-live="polite">${totalPages} ${totalPages === 1 ? 'page' : 'pages'}</span>
     </div>
@@ -275,6 +280,76 @@ function exportMarkdown() {
   link.download = `${safeName || 'document'}.md`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+}
+function openReview() {
+  const doc = state.active; if (!doc) return;
+  const selection = state.selectionRange?.toString().trim().slice(0, 2000) || '';
+  const backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `<section class="share-modal review-modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h2>Comments & suggestions</h2><p>Discuss this document or propose a replacement for selected text.</p></div><button class="icon-btn" data-close aria-label="Close">×</button></div><div class="review-columns"><section><h3>Comments</h3><div class="review-list" id="comment-list"></div><form id="comment-form"><label for="comment-text">Add a comment</label><textarea id="comment-text" maxlength="2000" required placeholder="Share a thought…"></textarea><button class="primary-btn">Post comment</button></form></section><section><h3>Suggestions</h3><div class="review-list" id="suggestion-list"></div><form id="suggestion-form"><label>Selected text <textarea id="suggestion-original" maxlength="2000" required placeholder="Select text in the document first">${escapeText(selection)}</textarea></label><label for="suggestion-proposed">Suggested replacement</label><textarea id="suggestion-proposed" maxlength="2000" required placeholder="Replacement text"></textarea><label for="suggestion-note">Note (optional)</label><input id="suggestion-note" maxlength="1000" placeholder="Why this change?"><button class="primary-btn">Submit suggestion</button></form></section></div></section>`;
+  document.body.append(backdrop);
+  const render = () => {
+    const current = state.active;
+    backdrop.querySelector('#comment-list').innerHTML = (current.comments || []).map(item => `<article class="review-item"><strong>${escapeText(item.authorName)}</strong><small>${new Date(item.createdAt).toLocaleString()}</small>${item.anchor ? `<blockquote>${escapeText(item.anchor)}</blockquote>` : ''}<p>${escapeText(item.text)}</p>${item.authorId === state.user.id || current.canEdit ? `<button class="text-action danger-text" data-delete-comment="${item.id}">Delete</button>` : ''}</article>`).join('') || '<p class="fine-print">No comments yet.</p>';
+    backdrop.querySelector('#suggestion-list').innerHTML = (current.suggestions || []).map(item => `<article class="review-item"><strong>${escapeText(item.authorName)} · ${escapeText(item.status)}</strong><small>${new Date(item.createdAt).toLocaleString()}</small><blockquote>${escapeText(item.originalText)}</blockquote><p>→ ${escapeText(item.proposedText)}</p>${item.note ? `<p>${escapeText(item.note)}</p>` : ''}${item.status === 'pending' && current.canEdit ? `<button class="text-action" data-accept-suggestion="${item.id}">Accept</button><button class="text-action danger-text" data-reject-suggestion="${item.id}">Reject</button>` : ''}</article>`).join('') || '<p class="fine-print">No suggestions yet.</p>';
+  };
+  render();
+  const close = () => backdrop.remove();
+  backdrop.querySelector('[data-close]').addEventListener('click', close);
+  backdrop.addEventListener('click', event => { if (event.target === backdrop) close(); });
+  backdrop.querySelector('#comment-form').addEventListener('submit', async event => {
+    event.preventDefault(); const text = backdrop.querySelector('#comment-text').value.trim(); if (!text) return;
+    try { await api(`/api/documents/${doc.id}/comments`, { method: 'POST', body: JSON.stringify({ text, anchor: selection }) });
+      const result = await api(`/api/documents/${doc.id}`); state.active = result.document; await refreshDocuments(true); render(); backdrop.querySelector('#comment-text').value = ''; showToast('Comment posted.');
+    } catch (error) { showToast(error.message, true); }
+  });
+  backdrop.querySelector('#suggestion-form').addEventListener('submit', async event => {
+    event.preventDefault(); const originalText = backdrop.querySelector('#suggestion-original').value.trim(); const proposedText = backdrop.querySelector('#suggestion-proposed').value.trim();
+    try { await api(`/api/documents/${doc.id}/suggestions`, { method: 'POST', body: JSON.stringify({ originalText, proposedText, note: backdrop.querySelector('#suggestion-note').value }) });
+      const result = await api(`/api/documents/${doc.id}`); state.active = result.document; await refreshDocuments(true); render(); backdrop.querySelector('#suggestion-proposed').value = ''; backdrop.querySelector('#suggestion-note').value = ''; showToast('Suggestion submitted.');
+    } catch (error) { showToast(error.message, true); }
+  });
+  backdrop.addEventListener('click', async event => {
+    const del = event.target.closest('[data-delete-comment]'); const accept = event.target.closest('[data-accept-suggestion]'); const reject = event.target.closest('[data-reject-suggestion]');
+    try {
+      if (del) { await api(`/api/documents/${doc.id}/comments/${del.dataset.deleteComment}`, { method: 'DELETE' }); }
+      if (reject) { await api(`/api/documents/${doc.id}/suggestions/${reject.dataset.rejectSuggestion}`, { method: 'PUT', body: JSON.stringify({ action: 'reject' }) }); }
+      if (accept) {
+        if (!await flushPendingSave()) return;
+        const suggestion = (state.active.suggestions || []).find(item => item.id === accept.dataset.acceptSuggestion);
+        const editor = document.createElement('div'); editor.innerHTML = document.querySelector('#editor')?.innerHTML ?? state.active.content;
+        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT); let found = null;
+        while (walker.nextNode()) if (walker.currentNode.nodeValue.includes(suggestion.originalText)) { found = walker.currentNode; break; }
+        if (!found) { showToast('The selected text changed. This suggestion can no longer be applied automatically.', true); return; }
+        const pos = found.nodeValue.indexOf(suggestion.originalText); found.replaceData(pos, suggestion.originalText.length, suggestion.proposedText);
+        const result = await api(`/api/documents/${doc.id}/suggestions/${suggestion.id}`, { method: 'PUT', body: JSON.stringify({ action: 'accept', content: editor.innerHTML }) });
+        state.active = result.document; state.dirty = false; renderWorkspace(); showToast('Suggestion accepted and saved as a version.'); close(); return;
+      }
+      const result = await api(`/api/documents/${doc.id}`); state.active = result.document; await refreshDocuments(true); render();
+    } catch (error) { showToast(error.message, true); }
+  });
+  backdrop.querySelector('#comment-text').focus();
+}
+async function saveVersion() {
+  if (!state.active?.canEdit || !await flushPendingSave()) return;
+  const label = window.prompt('Name this version (optional):', document.querySelector('#doc-title')?.value || state.active.title);
+  if (label === null) return;
+  try { await api(`/api/documents/${state.active.id}/versions`, { method: 'POST', body: JSON.stringify({ label: label.trim() || state.active.title }) }); showToast('Version saved.'); }
+  catch (error) { showToast(error.message, true); }
+}
+async function openVersionHistory() {
+  if (!state.active?.canEdit) return;
+  const doc = state.active;
+  try {
+    const data = await api(`/api/documents/${doc.id}/versions`);
+    const backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `<section class="share-modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h2>Version history</h2><p>Up to 20 named snapshots are kept with this document.</p></div><button class="icon-btn" data-close aria-label="Close">×</button></div><div class="version-list">${data.versions.length ? data.versions.slice().reverse().map(version => `<article class="version-item"><div><strong>${escapeText(version.title)}</strong><small>${escapeText(version.createdBy?.name || 'Unknown')} · ${new Date(version.createdAt).toLocaleString()}</small></div><button class="secondary-btn" data-restore="${version.id}">Restore</button></article>`).join('') : '<p class="fine-print">No saved versions yet. Use Save version to create a snapshot.</p>'}</div></section>`;
+    document.body.append(backdrop); backdrop.querySelector('[data-close]').addEventListener('click', () => backdrop.remove()); backdrop.addEventListener('click', event => { if (event.target === backdrop) backdrop.remove(); });
+    backdrop.querySelectorAll('[data-restore]').forEach(button => button.addEventListener('click', async () => {
+      if (!window.confirm('Restore this version? The current document will be saved as a version first.')) return;
+      try { if (!await flushPendingSave()) return; const result = await api(`/api/documents/${doc.id}/versions/${button.dataset.restore}`, { method: 'POST', body: '{}' }); state.active = result.document; state.dirty = false; await refreshDocuments(true); renderWorkspace(); showToast('Version restored. The previous document was saved in history.'); }
+      catch (error) { showToast(error.message, true); }
+    }));
+  } catch (error) { showToast(error.message, true); }
 }
 function emptyMarkup() {
   return `<div class="empty-state"><div class="empty-icon">✳</div><div class="eyebrow">Your writing space</div><h2>A little room to think.</h2><p>Create a document to capture an idea, start a plan, or share a draft with someone you trust.</p><button class="primary-btn" id="empty-new">＋ Create your first document</button><div class="empty-upload"><span>Have a .txt or .md file?</span><label class="upload-link" for="empty-import-file">Upload a document</label><input id="empty-import-file" type="file" accept=".txt,.md,text/plain,text/markdown" hidden></div></div>`;

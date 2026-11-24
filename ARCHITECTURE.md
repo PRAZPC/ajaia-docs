@@ -4,7 +4,7 @@
 
 - `server.js` — dependency-free Node HTTP server, JSON API, access checks, input validation, import conversion, and local data persistence.
 - `public/index.html`, `public/app.js`, `public/styles.css` — responsive single-page editor and workspace UI.
-- `test/server.test.js` — HTTP-level test for document privacy, sharing, viewer restrictions, and owner-only share management.
+- `test/server.test.js` — sanitizer and HTTP integration tests for document privacy, sharing, review workflows, import, restore, and deletion.
 - `data/store.json` — created at runtime; ignored by Git.
 
 ```mermaid
@@ -22,7 +22,9 @@ The application exposes three seeded demo identities. A user selects an email on
 
 ## Data model
 
-Each document has an ID, title, sanitized HTML content, owner ID, a list of `{ userId, role }` shares, and ISO timestamps. Roles are `viewer` and `editor`. The owner is the only user allowed to grant or change shares. An editor may update title/content; a viewer may read. Document list queries return only owned or shared records. Unauthorized private document lookups return `404` to avoid disclosing existence.
+Each document has an ID, title, sanitized HTML content, owner ID, a list of `{ userId, role }` shares, comments, suggestions, version snapshots, and ISO timestamps. Roles are `viewer` and `editor`. The owner is the only user allowed to grant or change shares. An editor may update title/content and resolve suggestions; collaborators with read access may comment and submit suggestions. Editors can create and restore versions. Document list queries return only owned or shared records. Unauthorized private document lookups return `404` to avoid disclosing existence.
+
+Version history supports explicit checkpoints and rate-limited snapshots while content changes. Restoring a version preserves the current state first, and the store retains at most 20 versions per document.
 
 ## Editor storage and save behavior
 
@@ -34,11 +36,11 @@ The browser reads a selected `.txt` or `.md` file as text and submits it to `/ap
 
 ## Deployment and environment
 
-No hosted deployment is configured. `PORT` selects the HTTP port; `DATA_FILE` selects the JSON store path; `NODE_ENV=production` adds the Secure cookie attribute. A hosted deployment needs a persistent volume and a single writer process or a database migration. Ephemeral serverless storage is not suitable. See [DEPLOYMENT.md](DEPLOYMENT.md).
+The app is deployed as a single Render Free Node web service described by `render.yaml`. `PORT` selects the HTTP port; `DATA_FILE` selects the JSON store path; `NODE_ENV=production` adds the Secure cookie attribute. The Render Free filesystem is ephemeral, so the live app is suitable for assessment testing with non-sensitive content only. Durable use needs persistent storage and a single writer process or database migration. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Deliberate trade-offs and deferred work
 
 - Used Node built-ins and browser APIs because the repository was empty; this avoids setup and package-install dependencies but produces a smaller editor than TipTap/ProseMirror.
 - Used local JSON for a demonstrable persistent local workflow; hosted multi-user persistence needs a transactional database.
 - Used passwordless seeded demo sign-in rather than real authentication. This must be replaced before any public deployment.
-- Deferred deletion, comments, live collaboration, DOCX import, and public sharing to protect the core edit/share journey.
+- Initially deferred deletion, comments, suggestions, version history, live collaboration, DOCX import, and public sharing to protect the core edit/share journey. Later assessment iterations implemented owner-only deletion, comments, suggestions, and version history. Real-time collaboration, DOCX import, and public sharing remain out of scope.

@@ -131,7 +131,7 @@ function renderWorkspace() {
       <div class="side-top"><div class="brand"><span class="brand-mark">a.</span> ajaia docs</div><button class="icon-btn" id="close-sidebar" aria-label="${state.active ? 'Close document and return to documents' : 'Close sidebar'}" title="${state.active ? 'Back to documents' : 'Close sidebar'}" aria-controls="sidebar" aria-expanded="true">×</button></div>
       <button class="new-btn" id="new-doc"><span aria-hidden="true">＋</span> New document</button>
       <div class="nav-label">My documents</div><div class="doc-list">${docRows(own, false)}</div>
-      <div class="nav-label" style="margin-top:24px">Shared with me</div><div class="doc-list">${docRows(shared, true)}</div>
+      <div class="nav-label shared-nav-label">Shared with me</div><div class="doc-list">${docRows(shared, true)}</div>
       <div class="sidebar-spacer"></div><div class="side-bottom"><div class="user-switch"><span class="avatar">${initials(state.user)}</span><span class="user-meta"><strong>${escapeText(state.user.name)}</strong><small>${escapeText(state.user.email)}</small></span></div></div>
     </aside>
     <section class="main"><header class="topbar">

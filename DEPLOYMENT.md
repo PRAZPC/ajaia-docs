@@ -14,7 +14,7 @@ The deployment begins with an empty document list. Do not add `data/store.json` 
 
 ## GitHub setup
 
-The confirmed personal identity is `prazpc <cprazwal@gmail.com>`. This workspace currently has no Git repository or remote. Initialize the repo and commit the reviewed deployment files using that identity. Keep `.env` and `data/store.json` out of Git. Push to a private GitHub repository; connect that repository to Render.
+The project is pushed to [PRAZPC/ajaia-docs](https://github.com/PRAZPC/ajaia-docs) on `main`. The confirmed identity `prazpc <cprazwal@gmail.com>` is recorded as the author and committer. `.env` and `data/store.json` remain excluded by `.gitignore`.
 
 ## Render setup
 
@@ -25,7 +25,7 @@ The confirmed personal identity is `prazpc <cprazwal@gmail.com>`. This workspace
 5. Deploy and wait for `/api/health` to pass. The health response is `{ "ok": true, "mode": "demo" }` and contains no secrets.
 6. Open the generated `onrender.com` URL and run the MVP checks in `PRODUCTION_QA.md`.
 
-If Blueprint connection requires provider login or authorization, complete that in the signed-in dashboard. No provider credentials belong in source code.
+The current Blueprint is live at [https://ajaia-docs-mvp.onrender.com/](https://ajaia-docs-mvp.onrender.com/). No provider credentials belong in source code.
 
 ## Local use
 

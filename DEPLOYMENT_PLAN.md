@@ -33,5 +33,6 @@ No paid service, database, object storage, domain, or new authentication system 
 
 ## Current blockers
 
-- There is no Git repository or remote. The user requested a push but has not supplied a target repository URL; the Edge session could not be inspected because browser URL verification failed.
-- Render account/repository connection is not configured. No deployment URL exists yet.
+- The code is pushed to `https://github.com/PRAZPC/ajaia-docs.git` on `main` using the confirmed personal identity.
+- Render Free Blueprint `ajaia-docs-mvp` is live at `https://ajaia-docs-mvp.onrender.com/`.
+- Full workflow QA remains pending; see `PRODUCTION_QA.md`. The ephemeral document-loss limitation is part of the accepted MVP tradeoff.

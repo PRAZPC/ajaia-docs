@@ -1,20 +1,21 @@
 # Final Deployment Report
 
-## Current status: Not deployed
+## Current status: Deployed — MVP smoke checks passed
 
-- **Public URL:** None; GitHub remote and Render service are not configured.
+- **Public URL:** [https://ajaia-docs-mvp.onrender.com/](https://ajaia-docs-mvp.onrender.com/)
 - **Target architecture:** One Render Free Node web service using the existing demo accounts and JSON document store.
 - **Provider cost:** $0 planned. No billing, paid add-on, domain, persistent disk, or database configured.
 - **MVP behavior:** Demo login is passwordless and publicly selectable. Only non-sensitive test content should be used.
 - **Storage:** `data/store.json` is stored on the Render service's ephemeral filesystem. Documents will be lost when a Free service sleeps, restarts, or redeploys.
-- **Local verification:** `npm test` passed (2 tests) and `npm run typecheck` passed before the current deployment config was added. Render's build command repeats both.
-- **Production QA:** Not run; see `PRODUCTION_QA.md`.
-- **Git identity:** User confirmed `prazpc <cprazwal@gmail.com>`. No repository or commit exists yet.
+- **Local verification:** `npm test` passed (2 tests) and `npm run typecheck` passed. Render's build command repeats both.
+- **Production QA:** Landing page, health endpoint, Alex sign-in, and switch to Jamie passed. Full QA remains incomplete; see `PRODUCTION_QA.md`.
+- **GitHub:** [PRAZPC/ajaia-docs](https://github.com/PRAZPC/ajaia-docs), branch `main`.
+- **Git identity:** User-confirmed identity verified as both author and committer.
+- **Commit:** `6deace82b6b27610ba9e23520adbd5dcf5e2e18d` — `feat: prepare Ajaia Docs MVP deployment`.
 
 ## Remaining steps
 
-1. Create or identify the GitHub repository URL, initialize the local repository with the confirmed identity, commit the reviewed changes, and push.
-2. In the Render dashboard, connect that repository using a Free Blueprint; verify only one free web service is created.
-3. Verify the actual public URL and fill in `PRODUCTION_QA.md` with observed outcomes.
+1. Test document create/edit/import/share workflows on the public URL if you want deeper MVP QA.
+2. Remember that documents may disappear after Render Free idles, restarts, or redeploys.
 
-The deployment is not claimed complete until the public URL is live and checked.
+The service is live and the recorded smoke checks were verified against the public URL.

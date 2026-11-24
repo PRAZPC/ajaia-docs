@@ -6,7 +6,7 @@
 - **GitHub repository:** [PRAZPC/ajaia-docs](https://github.com/PRAZPC/ajaia-docs) (`main`)
 - **Hosted MVP:** [ajaia-docs-mvp.onrender.com](https://ajaia-docs-mvp.onrender.com/)
 - **Google Drive code handoff folder:** [Open the project handoff folder](https://drive.google.com/drive/u/0/folders/1USsrAAWRcyZ84rPYf9xjOjvAG6hQjwpq)
-- **Screenshot folder:** [Open the screenshot folder](https://drive.google.com/drive/u/0/folders/1W0d_LyfhipcKkO_5yf7RBJZQmNloCMhO) — screenshots will be uploaded by the project owner.
+- **Screenshot folder:** [Open the screenshot folder](https://drive.google.com/drive/u/0/folders/1W0d_LyfhipcKkO_5yf7RBJZQmNloCMhO)
 - **Local run:** `npm install` is not needed; run `npm start`, then open `http://localhost:3000`.
 
 The hosted MVP is running an earlier deployment. The latest source on GitHub includes the fixes and features listed below, but has not been redeployed. Render's current free service stores documents on an ephemeral filesystem, so redeploying can erase documents created on the live service. The local app and its JSON document store are available for reviewing the latest source safely.
@@ -42,7 +42,7 @@ The hosted MVP is running an earlier deployment. The latest source on GitHub inc
 - [x] [WALKTHROUGH_SCRIPT.md](WALKTHROUGH_SCRIPT.md)
 - [x] Demo video URL above
 - [x] [Deployment guide and storage limitations](DEPLOYMENT.md)
-- [ ] Screenshots: destination folder is provided; project owner will upload them
+- [ ] Screenshots: destination folder provided
 - [x] Google Drive handoff folders linked above
 
 ## Known limitations

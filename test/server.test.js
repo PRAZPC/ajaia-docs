@@ -40,6 +40,8 @@ test('document access is private until shared, and viewer edits are denied', asy
   const { document } = await create.json();
   const ownerEdit = await fetch(`${origin}/api/documents/${document.id}`, { method: 'PUT', headers: { cookie: alex, 'content-type': 'application/json' }, body: JSON.stringify({ content: '<p>Saved across a restart.</p>' }) });
   assert.equal(ownerEdit.status, 200);
+  const autoHistory = await fetch(`${origin}/api/documents/${document.id}/versions`, { headers: { cookie: alex } });
+  assert.equal((await autoHistory.json()).versions.length, 1);
 
   const jamie = await login('jamie@ajaia.demo');
   const privateRead = await fetch(`${origin}/api/documents/${document.id}`, { headers: { cookie: jamie } });
@@ -100,6 +102,9 @@ test('document access is private until shared, and viewer edits are denied', asy
   const imported = await fetch(`${origin}/api/import`, { method: 'POST', headers: { cookie: alex, 'content-type': 'application/json' }, body: JSON.stringify({ filename: 'notes.md', mimeType: 'text/markdown', text: '# Imported\n\n**A formatted note**' }) });
   assert.equal(imported.status, 201);
   assert.match((await imported.json()).document.content, /<h1>Imported<\/h1>/);
+  const importedText = await fetch(`${origin}/api/import`, { method: 'POST', headers: { cookie: alex, 'content-type': 'application/json' }, body: JSON.stringify({ filename: 'notes.txt', mimeType: 'text/plain', text: 'First line\ncontinued line\n\nSecond paragraph <safe>' }) });
+  assert.equal(importedText.status, 201);
+  assert.equal((await importedText.json()).document.content, '<p>First line<br>continued line</p><p>Second paragraph &lt;safe&gt;</p>');
   const unsupported = await fetch(`${origin}/api/import`, { method: 'POST', headers: { cookie: alex, 'content-type': 'application/json' }, body: JSON.stringify({ filename: 'notes.docx', text: 'not supported' }) });
   assert.equal(unsupported.status, 415);
   const wrongMime = await fetch(`${origin}/api/import`, { method: 'POST', headers: { cookie: alex, 'content-type': 'application/json' }, body: JSON.stringify({ filename: 'notes.md', mimeType: 'application/pdf', text: 'not markdown' }) });

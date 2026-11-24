@@ -331,9 +331,7 @@ function openReview() {
 }
 async function saveVersion() {
   if (!state.active?.canEdit || !await flushPendingSave()) return;
-  const label = window.prompt('Name this version (optional):', document.querySelector('#doc-title')?.value || state.active.title);
-  if (label === null) return;
-  try { await api(`/api/documents/${state.active.id}/versions`, { method: 'POST', body: JSON.stringify({ label: label.trim() || state.active.title }) }); showToast('Version saved.'); }
+  try { await api(`/api/documents/${state.active.id}/versions`, { method: 'POST', body: JSON.stringify({}) }); showToast('Version saved. Open History to view or restore it.'); }
   catch (error) { showToast(error.message, true); }
 }
 async function openVersionHistory() {

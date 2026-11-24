@@ -216,7 +216,7 @@ function createServer() {
           : ['text/plain', 'text/markdown', 'text/x-markdown'];
         if (mimeType && !validMime.includes(mimeType)) throw httpError(415, 'The file content type does not match a supported text format.');
         if (typeof body.text !== 'string' || Buffer.byteLength(body.text, 'utf8') > MAX_UPLOAD) throw httpError(413, 'Files must be 1 MB or smaller.');
-        const content = extension === '.md' ? markdownToHtml(body.text) : body.text.split(/\r?\n/).map(line => `<p>${line.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;') || '<br>'}</p>`).join('');
+        const content = extension === '.md' ? markdownToHtml(body.text) : body.text.replace(/\r\n?/g, '\n').trim().split(/\n\s*\n+/).filter(paragraph => paragraph.length > 0).map(paragraph => `<p>${paragraph.split('\n').map(line => line.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')).join('<br>')}</p>`).join('');
         const doc = { id: crypto.randomUUID(), title: safeTitle(path.basename(filename, extension) || 'Imported document'), content: cleanHtml(content), ownerId: user.id, shares: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
         const store = await readStore(); store.documents.push(doc); await saveStore(store);
         return send(res, 201, { document: publicDoc(doc, user) });
@@ -296,6 +296,13 @@ function createServer() {
         if (!shareRoute && req.method === 'PUT') {
           if (!canEdit(doc, user)) throw httpError(403, 'You have view-only access.');
           const body = await bodyJson(req);
+          const contentChanged = body.content !== undefined && cleanHtml(body.content) !== doc.content;
+          const titleChanged = body.title !== undefined && body.title !== doc.title;
+          if (contentChanged || titleChanged) {
+            const latest = doc.versions?.at(-1);
+            const recent = latest && Date.now() - Date.parse(latest.createdAt) < 60_000;
+            if (!recent && (!latest || latest.content !== doc.content || titleChanged)) snapshot(doc, user, doc.title, true);
+          }
           if (body.title !== undefined) doc.title = safeTitle(body.title);
           if (body.content !== undefined) doc.content = cleanHtml(body.content);
           doc.updatedAt = new Date().toISOString(); await saveStore(store);

@@ -37,3 +37,17 @@
 @media(max-width:760px){.page-break{margin:26px -24px;gap:7px}.page-break-label{font-size:9px}.page-break-remove{opacity:1;width:20px;height:20px;flex-basis:20px}}
 .editable[contenteditable=true]:focus-visible{outline:none}
 .paper:focus-within{border-color:#dbe2d8;box-shadow:inset 2px 0 0 #e0e9dd,0 10px 35px #23311e08}
+.print-title{display:none}
+.export-tool{white-space:nowrap}
+@media print{
+  @page{size:A4;margin:18mm}
+  body{background:#fff!important}
+  body *{visibility:hidden!important}
+  .paper,.paper *{visibility:visible!important}
+  .paper{position:absolute!important;inset:0 auto auto 0!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;overflow:visible!important}
+  .print-title{display:block!important;margin:0 0 12mm!important;font:600 22pt 'Playfair Display',serif!important;color:#242922!important}
+  .editable{min-height:0!important;padding:0!important;font-size:11pt!important;line-height:1.65!important;outline:none!important}
+  .page-break{break-before:page!important;page-break-before:always!important;margin:0!important;padding:0!important;border:0!important;background:none!important}
+  .page-break::before,.page-break::after{display:none!important}
+  .page-break-remove{display:none!important}
+}

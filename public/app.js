@@ -156,6 +156,8 @@ function renderWorkspace() {
   root.querySelectorAll('[data-account-email]').forEach(button => button.addEventListener('click', () => switchAccount(button.dataset.accountEmail)));
   root.querySelector('#share')?.addEventListener('click', openShare);
   root.querySelector('#delete-document')?.addEventListener('click', deleteActiveDocument);
+  root.querySelector('#export-markdown')?.addEventListener('click', exportMarkdown);
+  root.querySelector('#export-pdf')?.addEventListener('click', () => window.print());
   if (state.active) attachEditor();
   startAccessWatch();
 }
@@ -220,16 +222,59 @@ function editorMarkup() {
         <button class="tool-btn" data-command="formatBlock" data-value="blockquote" aria-label="Quote" title="Quote" aria-pressed="false" ${disabled}>❝</button>
       </div><span class="tool-sep"></span>
       <button class="tool-btn page-break-tool" id="insert-page-break" title="Insert page break" aria-label="Insert page break" ${disabled}>↵ Page break</button>
+      <button class="tool-btn export-tool" id="export-markdown" title="Download as Markdown" aria-label="Download as Markdown">↓ Markdown</button>
+      <button class="tool-btn export-tool" id="export-pdf" title="Print or save as PDF" aria-label="Print or save as PDF">↓ PDF</button>
       <label class="tool-btn import-tool" for="import-file" title="Import a .txt or .md file" aria-label="Import .txt or .md" ${editable ? '' : 'aria-disabled="true"'}><span aria-hidden="true">↑</span><span>Import .txt / .md</span></label><input id="import-file" type="file" accept=".txt,.md,text/plain,text/markdown" ${disabled} hidden>
       <span class="page-count" aria-live="polite">${totalPages} ${totalPages === 1 ? 'page' : 'pages'}</span>
     </div>
-    <article class="paper"><div class="editable" id="editor" contenteditable="${editable ? 'true' : 'false'}" role="textbox" aria-label="Document content" aria-multiline="true">${state.active.content || ''}</div></article>
+    <article class="paper"><h1 class="print-title">${escapeText(state.active.title)}</h1><div class="editable" id="editor" contenteditable="${editable ? 'true' : 'false'}" role="textbox" aria-label="Document content" aria-multiline="true">${state.active.content || ''}</div></article>
     ${!editable ? '<p class="fine-print viewer-note">You have viewer access. Ask the owner for edit access to make changes.</p>' : '<p class="fine-print page-note">Pages advance automatically as you type. Insert a page break to start a page early.</p>'}
   </div>`;
 }
 function countPages(content) {
   const matches = String(content || '').match(/data-page-break\s*=\s*(?:"true"|'true'|true)/gi);
   return (matches?.length || 0) + 1;
+}
+function htmlToMarkdown(html) {
+  const parsed = new DOMParser().parseFromString(String(html || ''), 'text/html');
+  const convert = node => {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue.replace(/\s+/g, ' ');
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    const tag = node.tagName.toLowerCase();
+    if (node.matches('[data-page-break="true"]')) return '\n\n---\n\n';
+    const body = [...node.childNodes].map(convert).join('');
+    if (tag === 'br') return '\n';
+    if (tag === 'strong' || tag === 'b') return `**${body.trim()}**`;
+    if (tag === 'em' || tag === 'i') return `*${body.trim()}*`;
+    if (tag === 'u') return `__${body.trim()}__`;
+    if (/^h[1-3]$/.test(tag)) return `\n\n${'#'.repeat(Number(tag[1]))} ${body.trim()}\n\n`;
+    if (tag === 'blockquote') return `\n\n${body.trim().split('\n').map(line => `> ${line}`).join('\n')}\n\n`;
+    if (tag === 'li') {
+      const ordered = node.parentElement?.tagName.toLowerCase() === 'ol';
+      const number = [...(node.parentElement?.children || [])].indexOf(node) + 1;
+      return `${ordered ? `${number}.` : '-'} ${body.trim()}\n`;
+    }
+    if (tag === 'ul' || tag === 'ol') return `\n${body.trimEnd()}\n\n`;
+    if (tag === 'p' || tag === 'div') return `\n\n${body.trim()}\n\n`;
+    return body;
+  };
+  return [...parsed.body.childNodes].map(convert).join('')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+function exportMarkdown() {
+  if (!state.active) return;
+  const title = document.querySelector('#doc-title')?.value || state.active.title;
+  const content = document.querySelector('#editor')?.innerHTML ?? state.active.content;
+  const markdown = htmlToMarkdown(content);
+  const safeName = (title || 'document').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 120);
+  const blobUrl = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = `${safeName || 'document'}.md`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 }
 function emptyMarkup() {
   return `<div class="empty-state"><div class="empty-icon">✳</div><div class="eyebrow">Your writing space</div><h2>A little room to think.</h2><p>Create a document to capture an idea, start a plan, or share a draft with someone you trust.</p><button class="primary-btn" id="empty-new">＋ Create your first document</button><div class="empty-upload"><span>Have a .txt or .md file?</span><label class="upload-link" for="empty-import-file">Upload a document</label><input id="empty-import-file" type="file" accept=".txt,.md,text/plain,text/markdown" hidden></div></div>`;

@@ -46,7 +46,8 @@ async function refreshDocuments(keepActive = true) {
   state.documents = data.documents;
   if (keepActive && state.active) {
     const found = state.documents.find(doc => doc.id === state.active.id);
-    state.active = found ? { ...state.active, ...found } : null;
+    // List responses omit document bodies; keep the open editor's current content intact.
+    state.active = found ? { ...state.active, ...found, content: state.active.content } : null;
   }
 }
 

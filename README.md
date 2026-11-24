@@ -2,6 +2,8 @@
 
 A small collaborative writing workspace built for the Ajaia full-stack assessment. It supports demo-account sign-in, owned and shared documents, rich text, autosave, Markdown/text import, and owner-controlled sharing.
 
+**Demo video:** [Watch the Ajaia Docs walkthrough](https://youtu.be/jEK09wregSU) · **Submission notes:** [SUBMISSION.md](SUBMISSION.md)
+
 ## Feature status
 
 | Feature | Status |
@@ -11,12 +13,15 @@ A small collaborative writing workspace built for the Ajaia full-stack assessmen
 | Bold, italic, underline, headings, lists and quotes | Implemented; toolbar reflects active and mixed selection state |
 | Import `.txt` and `.md` up to 1 MB | Complete locally; Markdown sample file chooser flow manually checked |
 | Share with seeded users as viewer or editor | Stage role/add/remove changes, then save once; server checks each operation |
+| Comments and suggestion mode | Collaborators can comment and suggest selected-text replacements; editors review suggestions |
+| Document version history | Manual checkpoints and rate-limited snapshots; restore preserves the previous state |
+| Markdown and PDF export | Download Markdown or use browser print/save as PDF |
 | Revoke and stale shared access | Complete; server denies revoked access and open shared views revalidate periodically |
 | Delete documents | Owner-only API and UI action with confirmation; collaborators lose access |
 | Shared document metadata | Lists the owner and the viewer/editor role |
 | Pagination | Automatically inserts page breaks when content reaches the page height; manual early breaks are also available |
 | Automated server checks | Share updates/revocation, deletion, authorization, sanitization and restart persistence; `npm test` |
-| Hosted deployment and walkthrough video | Pending; see [SUBMISSION.md](SUBMISSION.md) and [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Hosted MVP and walkthrough video | MVP URL exists; latest source has not been redeployed. Demo video: [YouTube](https://youtu.be/jEK09wregSU) |
 
 ## Run locally
 
@@ -57,8 +62,9 @@ This is an assessment demo, not production-ready authentication or hosting. Demo
 
 1. Run `npm start` and open `http://localhost:3000`.
 2. Sign in as Alex, create a document, type text, apply formatting, and insert a manual page break.
-3. Open Share, stage access or role changes, and choose Save changes. The account menu stays in the header.
-4. Run `npm test` to verify access control, staged share updates, revocation, deletion and persistence.
+3. Import a `.txt` or `.md` file, then try Comments, suggestions, and Save version → History → Restore.
+4. Open Share, stage access or role changes, and choose Save changes. The account menu stays in the header.
+5. Run `npm test` to verify access control, review actions, version restore, import, deletion and persistence.
 
 The share dialog asks before discarding pending changes and confirms removals. Deleting a document is available only to its owner and requires confirmation. The sidebar can collapse and reopen from the header. Automatic pagination inserts a break when a new editor block reaches the page height; use Page break to begin a page early.
 

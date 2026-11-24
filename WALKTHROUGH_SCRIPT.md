@@ -1,14 +1,15 @@
-# Walkthrough script — 4 minutes
+# Reviewer walkthrough — 4 minutes
 
-Record on the verified deployed app once available. Until then, label the recording clearly as a local demo. Do not show secrets or claim unverified behavior.
+The submitted demo video is [here](https://youtu.be/jEK09wregSU). Use this sequence to review the latest GitHub source locally; the hosted MVP has not been updated to the latest commit.
 
-| Time | Demonstrate | Say |
+| Time | Demonstrate | Notes |
 |---|---|---|
-| 0:00–0:25 | Open login and choose Alex | “Ajaia Docs is a focused workspace for creating and sharing editable documents. These are seeded demo accounts.” |
-| 0:25–1:20 | Create a document, rename, type, apply a heading and formatting, wait for Saved, reload and reopen | “The editor stores formatted content on the server and shows autosave state. Here I’m confirming the title and heading survive a reload.” |
-| 1:20–1:55 | Import a `.md` or `.txt` sample | “Import supports Markdown and text up to one megabyte. Each file becomes a new editable document.” |
-| 1:55–2:50 | Share with Jamie, switch accounts, open Shared with me | “The owner grants editor or viewer access. The server checks permissions for each read and write.” |
-| 2:50–3:25 | Show `npm test` result and architecture note | “The automated test checks private-document isolation, viewer edit denial, and owner-only sharing.” |
-| 3:25–4:00 | Show submission status and limitations | “This version is a local demo. Hosted persistence and the production deployment are pending; I’ve documented those gaps rather than presenting a local URL as live.” |
+| 0:00–0:25 | Start `npm start`, open localhost, choose Alex | Demo accounts are passwordless and seeded for assessment use. |
+| 0:25–1:10 | Create a document, rename it, apply a heading and bold, type enough to see autosave | Wait for the Saved indicator. The local JSON store persists across a local server restart. |
+| 1:10–1:40 | Import a `.txt` or `.md` file; show the formatting toolbar scrolls on a narrow viewport | Imports preserve plain-text paragraphs and line breaks; Markdown headings/lists/emphasis are converted. |
+| 1:40–2:20 | Select text, post a comment, submit a replacement suggestion | Shared collaborators can comment and suggest. |
+| 2:20–2:55 | Sign in as an editor or return to Alex; accept/reject a suggestion | Accepting a suggestion saves the pre-change document as a version. |
+| 2:55–3:25 | Save version, make a small edit, open History, restore a snapshot | History includes manual checkpoints and rate-limited snapshots during continued edits; restore preserves the pre-restore state. |
+| 3:25–4:00 | Share with another demo account and run `npm test` | The API enforces viewer/editor permissions. Mention ephemeral storage and demo-auth limitations. |
 
-Before recording, verify a clean demo state, replace example status claims with observed results, keep the recording between 3 and 5 minutes, and test the uploaded link with reviewer-accessible permissions.
+Use non-sensitive test content. The Render Free service uses ephemeral storage; do not rely on documents surviving idle, restart, or redeploy. See [SUBMISSION.md](SUBMISSION.md) and [DEPLOYMENT.md](DEPLOYMENT.md).
